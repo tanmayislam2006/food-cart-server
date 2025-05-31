@@ -25,6 +25,13 @@ async function run() {
     const orderCollections = client.db("foodCartUser").collection("order");
     // get all menu
     app.get("/allMenu", async (req, res) => {
+      const category = req.query.category;
+      if (category && category !== "All") {
+        const query = {};
+        query.category = category;
+        const result = await menu.find(query).toArray();
+        return res.send(result);
+      }
       const result = await menu.find().toArray();
       res.send(result);
     });
@@ -104,7 +111,7 @@ async function run() {
       const result = await foodCartUser.updateOne(filter, updateDoc);
       res.send(result);
     });
-    // resest user cart items 
+    // resest user cart items
     app.delete("/resetCart/:uid", async (req, res) => {
       const uid = req.params.uid;
       const query = { uid: uid };
