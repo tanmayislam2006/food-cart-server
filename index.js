@@ -25,14 +25,17 @@ async function run() {
     const orderCollections = client.db("foodCartUser").collection("order");
     // get all menu
     app.get("/allMenu", async (req, res) => {
+      const query = {};
       const category = req.query.category;
-      if (category && category !== "All") {
-        const query = {};
-        query.category = category;
-        const result = await menu.find(query).toArray();
-        return res.send(result);
+      const uid = req.query.uid;
+
+      if (uid) {
+        query.uid = uid;
       }
-      const result = await menu.find().toArray();
+      if (category && category !== "All") {
+        query.category = category;
+      }
+      const result = await menu.find(query).toArray();
       res.send(result);
     });
     // get user with user uid from firebase
@@ -82,7 +85,6 @@ async function run() {
     });
     app.post("/order", async (req, res) => {
       const orderInfo = req.body;
-      console.log(orderInfo);
       const result = await orderCollections.insertOne(orderInfo);
       res.send(result);
     });
@@ -116,6 +118,12 @@ async function run() {
       const uid = req.params.uid;
       const query = { uid: uid };
       const result = await cartCollections.deleteMany(query);
+      res.send(result);
+    });
+    // vender url
+    app.post("/addedDish", async (req, res) => {
+      const dishInfo = req.body;
+      const result = await menu.insertOne(dishInfo);
       res.send(result);
     });
     await client.db("admin").command({ ping: 1 });
