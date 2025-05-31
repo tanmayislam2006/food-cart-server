@@ -46,7 +46,12 @@ async function run() {
       const result = await cartCollections.find(query).toArray();
       res.send(result);
     });
-
+    app.get("/order/:uid",async(req,res)=>{
+      const uid =req.params.uid
+      const query={uid:uid}
+      const result=await orderCollections.find(query).toArray()
+      res.send(result)
+    })
     // aded user cart item
     app.post("/cart", async (req, res) => {
       const information = req.body;
@@ -71,6 +76,7 @@ async function run() {
     app.post('/order',async(req,res)=>{
       const orderInfo=req.body
       const result =await orderCollections.updateOne(orderInfo)
+      res.send(result)
     })
     // register user
     app.post("/register", async (req, res) => {
