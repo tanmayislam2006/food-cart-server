@@ -22,6 +22,7 @@ async function run() {
     const foodCartUser = client.db("foodCartUser").collection("users");
     const menu = client.db("foodCartUser").collection("allMenu");
     const cartCollections = client.db("foodCartUser").collection("cart");
+    const orderCollections = client.db("foodCartUser").collection("order");
     // get all menu
     app.get("/allMenu", async (req, res) => {
       const result = await menu.find().toArray();
@@ -45,39 +46,32 @@ async function run() {
       const result = await cartCollections.find(query).toArray();
       res.send(result);
     });
+
     // aded user cart item
-    // ...existing code...
-app.post("/cart", async (req, res) => {
-  const information = req.body;
-  const { uid, dishId, quantity } = information;
+    app.post("/cart", async (req, res) => {
+      const information = req.body;
+      const { uid, dishId, quantity } = information;
 
-  // Check if the item already exists in the user's cart
-  const query = { uid: uid, dishId: dishId };
-  const existingCartItem = await cartCollections.findOne(query);
+      // Check if the item already exists in the user's cart
+      const query = { uid: uid, dishId: dishId };
+      const existingCartItem = await cartCollections.findOne(query);
 
-  if (existingCartItem) {
-    // If exists, update quantity to the value from the body
-    const updateResult = await cartCollections.updateOne(
-      query,
-      { $set: { quantity } }
-    );
-    res.send({ updated: true, result: updateResult });
-  } else {
-    // If not exists, insert the new item with the provided quantity
-    const insertResult = await cartCollections.insertOne(information);
-    res.send({ inserted: true, result: insertResult });
-  }
-});
-
-    // app.post("/cart", async (req, res) => {
-    //   const information = req.body;
-    //   const {uid,dishId}=information
-    //   console.log(uid,dishId);
-      
-    //   const result = await cartCollections.insertOne(information);
-    //   res.send(result);
-    // });
-
+      if (existingCartItem) {
+        // If exists, update quantity to the value from the body
+        const updateResult = await cartCollections.updateOne(query, {
+          $set: { quantity },
+        });
+        res.send({ updated: true, result: updateResult });
+      } else {
+        // If not exists, insert the new item with the provided quantity
+        const insertResult = await cartCollections.insertOne(information);
+        res.send({ inserted: true, result: insertResult });
+      }
+    });
+    app.post('/order',async(req,res)=>{
+      const orderInfo=req.body
+      const result =await orderCollections.updateOne(orderInfo)
+    })
     // register user
     app.post("/register", async (req, res) => {
       const userInformation = req.body;
@@ -90,16 +84,6 @@ app.post("/cart", async (req, res) => {
       const result = await foodCartUser.insertOne(userInformation);
       res.send(result);
     });
-    // update the quantity with dishid
-    // app.put("/cart/:dishId", async (req, res) => {
-    //   const dishId = req.params.dishId;
-    //   const filter = { dishId: dishId };
-    //   const updateDoc = {
-    //     $inc: { quantity: 1 },
-    //   };
-    //   const result = await cartCollections.updateOne(filter, updateDoc);
-    //   res.send(result);
-    // });
 
     // update user login information
     app.patch("/login", async (req, res) => {
@@ -119,8 +103,6 @@ app.post("/cart", async (req, res) => {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Optional: You can close the client here if needed
-    // await client.close();
   }
 }
 run().catch(console.dir);
