@@ -75,7 +75,8 @@ async function run() {
     });
     app.post('/order',async(req,res)=>{
       const orderInfo=req.body
-      const result =await orderCollections.updateOne(orderInfo)
+      console.log(orderInfo);
+      const result =await orderCollections.insertOne(orderInfo)
       res.send(result)
     })
     // register user
