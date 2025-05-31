@@ -46,12 +46,12 @@ async function run() {
       const result = await cartCollections.find(query).toArray();
       res.send(result);
     });
-    app.get("/order/:uid",async(req,res)=>{
-      const uid =req.params.uid
-      const query={uid:uid}
-      const result=await orderCollections.find(query).toArray()
-      res.send(result)
-    })
+    app.get("/order/:uid", async (req, res) => {
+      const uid = req.params.uid;
+      const query = { uid: uid };
+      const result = await orderCollections.find(query).toArray();
+      res.send(result);
+    });
     // aded user cart item
     app.post("/cart", async (req, res) => {
       const information = req.body;
@@ -73,12 +73,12 @@ async function run() {
         res.send({ inserted: true, result: insertResult });
       }
     });
-    app.post('/order',async(req,res)=>{
-      const orderInfo=req.body
+    app.post("/order", async (req, res) => {
+      const orderInfo = req.body;
       console.log(orderInfo);
-      const result =await orderCollections.insertOne(orderInfo)
-      res.send(result)
-    })
+      const result = await orderCollections.insertOne(orderInfo);
+      res.send(result);
+    });
     // register user
     app.post("/register", async (req, res) => {
       const userInformation = req.body;
@@ -104,7 +104,13 @@ async function run() {
       const result = await foodCartUser.updateOne(filter, updateDoc);
       res.send(result);
     });
-
+    // resest user cart items 
+    app.delete("/resetCart/:uid", async (req, res) => {
+      const uid = req.params.uid;
+      const query = { uid: uid };
+      const result = await cartCollections.deleteMany(query);
+      res.send(result);
+    });
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
