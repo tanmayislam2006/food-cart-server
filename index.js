@@ -169,6 +169,33 @@ async function run() {
       const result = await menu.updateOne(filter, updateDoc);
       res.send(result);
     });
+    // Get all users who ordered a specific dish
+    app.get("/dishOrders/:dishId", async (req, res) => {
+      const dishId = req.params.dishId;
+
+      try {
+        // Find all orders that include this dishId form order collection 
+        const orders = await orderCollections
+          .find({
+            "cartItems.dishId": dishId,
+          })
+          .toArray();
+        // Collect all unique user IDs who ordered the dish
+        const userIds = [...new Set(orders.map((order) => order.uid))];
+
+        // Find user info for those user IDs
+        const users = await foodCartUser
+          .find({
+            uid: { $in: userIds },
+          })
+          .toArray();
+
+        res.send(users);
+      } catch (error) {
+        console.error("Error getting users who ordered dish:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
