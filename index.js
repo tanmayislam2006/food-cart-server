@@ -35,9 +35,40 @@ async function run() {
       if (category && category !== "All") {
         query.category = category;
       }
+
+      // Fetch all menu items based on query
       const result = await menu.find(query).toArray();
+
+      // Fetch all orders only once
+      const allOrder = await orderCollections.find().toArray();
+
+      // Loop through each menu item
+      for (const singleDishFrom of result) {
+        const dishId = singleDishFrom?._id.toString();
+        let orderCount = 0;
+
+        // Loop through each order
+        for (const singleOrder of allOrder) {
+          const { cartItems } = singleOrder;
+
+          // Loop through each item in the cart
+          for (const singleCart of cartItems) {
+            // singlecart is a object
+            // If cart item matches this dish, increase the count
+            if (singleCart.dishId === dishId) {
+              orderCount += 1; //
+            }
+          }
+        }
+
+        // Add order count to the dish object
+        singleDishFrom.orderCount = orderCount;
+      }
+
+      // Send updated result with orderCount included for each dish
       res.send(result);
     });
+
     // get user with user uid from firebase
     // ...existing code...
     app.get("/user/:uid", async (req, res) => {
