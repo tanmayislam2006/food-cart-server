@@ -3,9 +3,17 @@ require("dotenv").config();
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const cookieParser = require("cookie-parser");
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
+const jwt = require("jsonwebtoken");
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.kn8r7rw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -16,16 +24,46 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-
+const verifyYourSecretToken = (req, res, next) => {
+  const getTokenFromCooike = req.cookies.YourSecretToken;
+  if (!getTokenFromCooike) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(getTokenFromCooike, process.env.JWT_SECRET, (err, decode) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.decoded = decode;
+    next();
+  });
+};
 async function run() {
   try {
     const foodCartUser = client.db("foodCartUser").collection("users");
     const menu = client.db("foodCartUser").collection("allMenu");
     const cartCollections = client.db("foodCartUser").collection("cart");
     const orderCollections = client.db("foodCartUser").collection("order");
+
+    app.post("/jsonwebtoken", async (req, res) => {
+      const userUid = req.body;
+      const token = jwt.sign(userUid, process.env.JWT_SECRET, {
+        expiresIn: "8h",
+      });
+      res.cookie("YourSecretToken", token, {
+        httpOnly: true,
+        // if the url go production level set secure true and samstie none
+        secure: true,
+        sameSite: "none",
+      });
+      res.send({ message: "your cooike is set" });
+    });
+
     // get all menu
     app.get("/allMenu", async (req, res) => {
       const query = {};
+      const item = parseInt(req.query.item);
+      const page = parseInt(req.query.page);
       const category = req.query.category;
       const uid = req.query.uid;
 
@@ -37,7 +75,11 @@ async function run() {
       }
 
       // Fetch all menu items based on query
-      const result = await menu.find(query).toArray();
+      const result = await menu
+        .find(query)
+        .skip(page * item)
+        .limit(item)
+        .toArray();
 
       // Fetch all orders only once
       const allOrder = await orderCollections.find().toArray();
@@ -81,8 +123,11 @@ async function run() {
       res.send(user);
     });
     // get user car items form db
-    app.get("/cart/:uid", async (req, res) => {
+    app.get("/cart/:uid", verifyYourSecretToken, async (req, res) => {
       const uid = req.params.uid;
+      if (req.decoded.uid !== uid) {
+        return res.status(403).send({ message: "forbidden acces access" });
+      }
       const query = { uid: uid };
       const result = await cartCollections.find(query).toArray();
       res.send(result);
@@ -174,7 +219,7 @@ async function run() {
       const dishId = req.params.dishId;
 
       try {
-        // Find all orders that include this dishId form order collection 
+        // Find all orders that include this dishId form order collection
         const orders = await orderCollections
           .find({
             "cartItems.dishId": dishId,
